@@ -1,0 +1,1 @@
+CreateFileList.pl -nop -type 3 -run 15 -n 25000000 DST_CALO_WAVEFORM DST_GLOBAL DST_TRUTH_JET

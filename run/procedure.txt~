@@ -1,0 +1,24 @@
+mkdir -p output
+mkdir -p output/evt
+mkdir -p output/err
+mkdir -p output/out
+mkdir -p output/gmg
+mkdir -p output/rmg
+mkdir -p output/root
+mkdir -p output/sumroot
+
+bash getlists.sh (will ask for args)
+bash createfilelistcommand.sh
+
+bash run_runs.sh [tag] 0 0
+bash run_runs_sim.sh [tag] 0 0
+
+wait for runs to finish (fast)
+
+edit get_image_lists.sh to use the tag you gave run_runs.sh
+
+bash get_image_lists.sh
+bash run_images_for_all.sh
+bash allhadd.sh
+
+root -b -q plot.C
