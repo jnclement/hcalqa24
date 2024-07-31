@@ -197,9 +197,12 @@ int R24hcalQA::process_event(PHCompositeNode *topNode)
   secp[0] = &sectorem;
   secp[1] = &sectorih;
   secp[2] = &sectoroh;
-  
+  float* caletot[3] = {&emetot, &ihetot, &ohetot};
+  int* caleta[3] = {emcaletabin, ihcaletabin, ohcaletabin};
+  int* calphi[3] = {emcalphibin, ihcalphibin, ohcalphibin};
   float* calen[3] = {emcalen, ihcalen, ohcalen};
   float* calt[3] = {emcalt, ihcalt, ohcalt};
+  
   //Get towerinfocontainer objects from nodetree
   TowerInfoContainer *towersOH = findNode::getClass<TowerInfoContainerv2>(topNode, "TOWERINFO_CALIB_HCALOUT");
   if(!towersOH) towersOH = findNode::getClass<TowerInfoContainerv1>(topNode, "TOWERINFO_CALIB_HCALOUT");
@@ -215,6 +218,11 @@ TowerInfoContainer *towersEM = findNode::getClass<TowerInfoContainerv2>(topNode,
   if(!towersEM) towersEM = findNode::getClass<TowerInfoContainerv1>(topNode, "TOWERINFO_CALIB_CEMC");
   if(!towersEM) towersEM = findNode::getClass<TowerInfoContainerv3>(topNode, "TOWERINFO_CALIB_CEMC");
   if(!towersEM) towersEM = findNode::getClass<TowerInfoContainerv4>(topNode, "TOWERINFO_CALIB_CEMC");
+
+  std::vector<TowerInfoContainer*> towers;
+  towers.push_back(towersEM);
+  towers.push_back(towersIH);
+  towers.push_back(towersOH);
   
   MbdVertexMap* mbdvtxmap = findNode::getClass<MbdVertexMapv1>(topNode, "MbdVertexMap");
   if(_debug > 2) cout << "MBDVTXMAP: " << mbdvtxmap << endl;
@@ -314,44 +322,53 @@ TowerInfoContainer *towersEM = findNode::getClass<TowerInfoContainerv2>(topNode,
     }
   */
   if(_debug > 1) cout << "getting OHCal info" << endl;
-  if(towersOH)
-    { //get OHCal values
-
-      if(_debug > 2) cout << "OHCal towers exist" << endl;
-      int nchannels = 1536; //channels in ohcal
-      for(int i=0; i<nchannels; ++i) //loop over channels 
+  for(int h=0; h<3; ++h)
+    {
+      if(towers[h])
+	{ //get OHCal values
+	  
+	  if(_debug > 2) cout << "OHCal towers exist" << endl;
+	  int nchannels = (h==0?24576:1536); //channels in ohcal
+	  for(int i=0; i<nchannels; ++i) //loop over channels 
+	    {
+	      TowerInfo *tower = towers[h]->get_tower_at_channel(i); //get OHCal tower
+	      int key = towers[h]->encode_key(i);
+	      int etabin, phibin;
+	      if(_dotow) 
+		{
+		  etabin = towers[h]->getTowerEtaBin(key);
+		  phibin = towers[h]->getTowerPhiBin(key);
+		}
+	      float time = towers[h]->get_tower_at_channel(i)->get_time_float(); //get time
+	      
+	      if (tower->get_isHot() || tower->get_isBadChi2())// || !tower->get_isGood())
+		{ 
+		  continue;
+		}
+	      
+	      calen[h][*secp[h]] = tower->get_energy(); //actual tower energy (calibrated)
+	      *caletot[h] += calen[h][*secp[h]];
+	      //ohcalchi2[sectoroh] = tower->get_chi2();
+	      calt[h][*secp[h]] = time; //store time value
+	      if(_dotow) 
+		{
+		  caleta[h][*secp[h]] = etabin; //get eta and phi of towers
+		  calphi[h][*secp[h]] = phibin;
+		  (*secp[h])++;
+		}
+	    }
+	  if(_debug > 1) cout << *secp[h] << endl;
+	}
+      else
 	{
-	  TowerInfo *tower = towersOH->get_tower_at_channel(i); //get OHCal tower
-	  int key = towersOH->encode_key(i);
-	  int etabin, phibin;
-	  if(_dotow) 
+	  if(_debug > 1)
 	    {
-	      etabin = towersOH->getTowerEtaBin(key);
-	      phibin = towersOH->getTowerPhiBin(key);
-	    }
-	  float time = towersOH->get_tower_at_channel(i)->get_time_float(); //get time
-	  
-	  if (tower->get_isHot() || tower->get_isBadChi2())// || !tower->get_isGood())
-	    { 
-	      continue;
-	    }
-	  
-	  ohcalen[sectoroh] = tower->get_energy(); //actual tower energy (calibrated)
-	  ohetot += ohcalen[sectoroh];
-	  //ohcalchi2[sectoroh] = tower->get_chi2();
-	  ohcalt[sectoroh] = time; //store time value
-	  if(_dotow) 
-	    {
-	      ohcaletabin[sectoroh] = etabin; //get eta and phi of towers
-	      ohcalphibin[sectoroh] = phibin;
-	      sectoroh++;
+	      cout << "no towers" << h << endl;
 	    }
 	}
-      if(_debug > 1) cout << sectoroh << endl;
+      //if(_debug > 1) cout << "Getting MBD info" << endl;
     }
-  //if(_debug > 1) cout << "Getting MBD info" << endl;
-  
-
+      
   if(_debug > 1) cout << "Filling" << endl;
   //if(_debug) cout << rtemen[1535] << " " <<rtemen[sector_rtem-1] << endl;
   _tree->Fill();
