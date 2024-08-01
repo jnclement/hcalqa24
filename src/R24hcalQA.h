@@ -44,6 +44,7 @@ class R24hcalQA : public SubsysReco
   float _cluster_phi[10000];
   float _cluster_eta[10000];
   int _dotow;
+  int goodevt;
   int _datorsim;
   int _evtnum;
   int _evtct;

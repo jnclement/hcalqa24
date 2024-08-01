@@ -73,6 +73,7 @@ R24hcalQA::R24hcalQA(const std::string &name, const int debug, int datorsim, int
   _foutname = name;
   _debug = debug;
   mbevt = 0;
+  goodevt = 0;
   _datorsim = datorsim;
 }
 
@@ -121,6 +122,7 @@ int R24hcalQA::Init(PHCompositeNode *topNode)
       _tree->Branch("ihcalphibin",ihcalphibin,"ihcalphibin[sectorih]/I");
       _tree->Branch("ohcalphibin",ohcalphibin,"ohcalphibin[sectoroh]/I");
     }
+  _tree2->Branch("goodevt",&goodevt,"goodevt/I");
   _tree->Branch("sectormb",&sectormb,"sectormb/I");
   _tree->Branch("mbenrgy",mbenrgy,"mbenrgy[sectormb]/F"); //MBD reported value (could be charge or time)
   _tree->Branch("emcalt",emcalt,"emcalt[sectorem]/F"); //time value of EMCal sector
@@ -315,6 +317,7 @@ TowerInfoContainer *towersEM = findNode::getClass<TowerInfoContainerv2>(topNode,
       if(ismb) mbevt--;
       return Fun4AllReturnCodes::EVENT_OK;
     }
+  goodevt++;
   /*
   else
     {

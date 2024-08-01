@@ -130,14 +130,18 @@ int quickroot(string filebase="", int njob=0)
   long long unsigned int nevents[2] = {0};
   int evtct[2];
   int mbevt[2];
+  int goodevt;
+  int totalgood = 0;
   long long unsigned int nmb[2] = {0};
   for(int h=nosim; h<2; ++h)
     {
       tree2[h]->SetBranchAddress("_evtct",&evtct[h]);
       tree2[h]->SetBranchAddress("mbevt",&mbevt[h]);
+      tree2[h]->SetBranchAddress("goodevt",&goodevt);
       for(int i=0; i<tree2[h]->GetEntries(); ++i)
 	{
 	  tree2[h]->GetEntry(i);
+	  totalgood += goodevt;
 	  nevents[h] += evtct[h];
 	  nmb[h] += mbevt[h];
 	  //cout << mbevt << endl;
@@ -152,36 +156,42 @@ int quickroot(string filebase="", int njob=0)
   int trigs[4] = {0};
   trigs[0] = nmb[1];
   int outevt = nevents[1];
-  int ntg[4] = {0};
+  int ntg[3][4] = {0};
   
   outt->Branch("outtrig",trigs,"outtrig[4]/I");
   outt->Branch("outevt",&outevt,"outevt/I");
-  outt->Branch("ntg",ntg,"ntg[4]/I");
+  outt->Branch("ntg",ntg,"ntg[3][4]/I");
   outt->Branch("rn",&rn,"rn/I");
-  TH1D* h1_tower_E[4][24][64];
-  TH1D* h1_calo_E[4];
-  TH1D* h1_etaslice_E[4][24];
-  TH1D* h1_tower_timedist[4][24][64];
-  TH1D* h1_calo_timedist[4];
-  TH1D* h1_etaslice_timedist[4][24];
+  TH1D* h1_tower_E[3][4][96][256];
+  TH1D* h1_calo_E[3][4];
+  TH1D* h1_etaslice_E[3][4][96];
+  TH1D* h1_tower_timedist[3][4][96][256];
+  TH1D* h1_calo_timedist[3][4];
+  TH1D* h1_etaslice_timedist[3][4][96];
+  TH1D* h1_calo_slopes[3][4];
+  TH1D* h1_etaslice_slopes[3][4][96];
+  TH1D* h1_slopes_etaslice[3][4];
   unsigned long int brtime = 9*(1721285685/10);
   unsigned long int ertime = (11*((unsigned long int)1721308753))/10;
   unsigned long int range = ertime - brtime;
 
-  for(int h=nosim; h<2; ++h)
+  for(int h=0; h<3; ++h)
     {
       for(int i=0; i<4; ++i)
 	{
-	  h1_calo_E[i] = new TH1D(("h1_calo_E"+to_string(i)).c_str(),"",1050,-5,100);
-	  h1_calo_timedist[i] = new TH1D(("h1_calo_timedist"+to_string(i)).c_str(),"",300,-12,18);
-	  for(int j=0; j<24; ++j)
+	  h1_calo_slopes[h][i] = new TH1D(("h1_calo_slopes"+to_string(h)+"_"+to_string(i)).c_str(),"",1000,-10,0);
+	  h1_slopes_etaslice[h][i] = new TH1D(("h1_slopes_etaslice"+to_string(h)+"_"+to_string(i)).c_str(),"",1000,-10,0);
+	  h1_calo_E[h][i] = new TH1D(("h1_calo_E"+to_string(h)+"_"+to_string(i)).c_str(),"",1050,-5,100);
+	  h1_calo_timedist[h][i] = new TH1D(("h1_calo_timedist"+to_string(h)+"_"+to_string(i)).c_str(),"",300,-12,18);
+	  for(int j=0; j<96; ++j)
 	    {
-	      h1_etaslice_E[i][j] = new TH1D(("h1_etaslice_E"+to_string(i)+"_"+to_string(j)).c_str(),"",1050,-5,100);
-	      h1_etaslice_timedist[i][j] = new TH1D(("h1_etaslice_timedist"+to_string(i)+"_"+to_string(j)).c_str(),"",300,-12,18);
-	      for(int k=0; k<64; ++k)
+	      h1_etaslice_slopes[h][i][j] = new TH1D(("h1_etaslice_slopes"+to_string(h)+"_"+to_string(i)+"_"+to_string(j)).c_str(),"",1000,-10,0);
+	      h1_etaslice_E[h][i][j] = new TH1D(("h1_etaslice_E"+to_string(h)+"_"+to_string(i)+"_"+to_string(j)).c_str(),"",1050,-5,100);
+	      h1_etaslice_timedist[h][i][j] = new TH1D(("h1_etaslice_timedist"+to_string(h)+"_"+to_string(i)+"_"+to_string(j)).c_str(),"",300,-12,18);
+	      for(int k=0; k<256; ++k)
 		{
-		  h1_tower_E[i][j][k] = new TH1D(("h1_tower_E"+to_string(i)+"_"+to_string(j)+"_"+to_string(k)).c_str(),"",1050,-5,100);
-		  h1_tower_timedist[i][j][k] = new TH1D(("h1_tower_timedist"+to_string(i)+"_"+to_string(j)+"_"+to_string(k)).c_str(),"",300,-12,18);
+		  h1_tower_E[h][i][j][k] = new TH1D(("h1_tower_E"+to_string(h)+"_"+to_string(i)+"_"+to_string(j)+"_"+to_string(k)).c_str(),"",1050,-5,100);
+		  h1_tower_timedist[h][i][j][k] = new TH1D(("h1_tower_timedist"+to_string(h)+"_"+to_string(i)+"_"+to_string(j)+"_"+to_string(k)).c_str(),"",300,-12,18);
 		}
 	    }
 	}
@@ -191,12 +201,12 @@ int quickroot(string filebase="", int njob=0)
   int ismb[2];
   float vtx[3];
   float mbdq[128];
-  float caloE;
-  int nsec;
-  int etabin[1536];
-  int phibin[1536];
-  float calen[1536];
-  float calt[1536];
+  float caloE[3];
+  int nsec[3];
+  int etabin[3][24576];
+  int phibin[3][24576];
+  float calen[3][24576];
+  float calt[3][24576];
   tree[1]->SetBranchAddress("triggervec",&trigvec);
   tree[1]->SetBranchAddress("ohetot",&caloE);
   for(int h=nosim; h<2; ++h)
@@ -205,11 +215,24 @@ int quickroot(string filebase="", int njob=0)
       tree[h]->SetBranchAddress("vtx",vtx);
       tree[h]->SetBranchAddress("ismb",&ismb[h]);
       tree[h]->SetBranchAddress("_evtnum",&evtnum[h]);
-      tree[h]->SetBranchAddress("sectoroh",&nsec);
-      tree[h]->SetBranchAddress("ohcaletabin",etabin);
-      tree[h]->SetBranchAddress("ohcalphibin",phibin);
-      tree[h]->SetBranchAddress("ohcalen",calen);
-      tree[h]->SetBranchAddress("ohcalt",calt);
+      
+      tree[h]->SetBranchAddress("sectorem",&nsec[0]);
+      tree[h]->SetBranchAddress("emcaletabin",etabin[0]);
+      tree[h]->SetBranchAddress("emcalphibin",phibin[0]);
+      tree[h]->SetBranchAddress("emcalen",calen[0]);
+      tree[h]->SetBranchAddress("emcalt",calt[0]);
+
+      tree[h]->SetBranchAddress("sectorih",&nsec[1]);
+      tree[h]->SetBranchAddress("ihcaletabin",etabin[1]);
+      tree[h]->SetBranchAddress("ihcalphibin",phibin[1]);
+      tree[h]->SetBranchAddress("ihcalen",calen[1]);
+      tree[h]->SetBranchAddress("ihcalt",calt[1]);
+
+      tree[h]->SetBranchAddress("sectoroh",&nsec[2]);
+      tree[h]->SetBranchAddress("ohcaletabin",etabin[2]);
+      tree[h]->SetBranchAddress("ohcalphibin",phibin[2]);
+      tree[h]->SetBranchAddress("ohcalen",calen[2]);
+      tree[h]->SetBranchAddress("ohcalt",calt[2]);
     }
 
   TCanvas* c = new TCanvas("","",800,480);
@@ -220,6 +243,7 @@ int quickroot(string filebase="", int njob=0)
     {
       for(int i=0; i<tree[h]->GetEntries(); ++i)
 	{
+
 	  tree[h]->GetEntry(i);
 	  
 	  if(ismb[h]) h1_zdist->Fill(vtx[2]);
@@ -233,17 +257,20 @@ int quickroot(string filebase="", int njob=0)
 	      if(dtrigs[j])
 		{
 		  if(j>0) ++trigs[j];
-		  for(int k = 0; k<nsec; ++k)
+		  for(int q=0; q<3; ++q)
 		    {
-		      if(calen[k] > 0.5) ntg[j]++;
-		      h1_calo_E[j]->Fill(calen[k]);
-		      h1_etaslice_E[j][etabin[k]]->Fill(calen[k]);
-		      h1_tower_E[j][etabin[k]][phibin[k]]->Fill(calen[k]);
-		      if(calen[k] > 1)
+		      for(int k = 0; k<nsec[q]; ++k)
 			{
-			  h1_calo_timedist[j]->Fill(calt[k]);
-			  h1_etaslice_timedist[j][etabin[k]]->Fill(calt[k]);
-			  h1_tower_timedist[j][etabin[k]][phibin[k]]->Fill(calt[k]);		 
+			  if(calen[q][k] > 0.5) ntg[q][j]++;
+			  h1_calo_E[q][j]->Fill(calen[q][k]);
+			  h1_etaslice_E[q][j][etabin[q][k]]->Fill(calen[q][k]);
+			  h1_tower_E[q][j][etabin[q][k]][phibin[q][k]]->Fill(calen[q][k]);
+			  if(calen[q][k] > 0.5)
+			    {
+			      h1_calo_timedist[q][j]->Fill(calt[q][k]);
+			      h1_etaslice_timedist[q][j][etabin[q][k]]->Fill(calt[q][k]);
+			      h1_tower_timedist[q][j][etabin[q][k]][phibin[q][k]]->Fill(calt[q][k]);		 
+			    }
 			}
 		    }
 		}
@@ -254,22 +281,48 @@ int quickroot(string filebase="", int njob=0)
 	    }	  
 	}
     }
+
+  for(int h=0; h<3; ++h)
+    {
+      for(int i=0; i<4; ++i)
+	{
+	  for(int j=0; j<(h==0?96:24); ++j)
+	    {
+	      h1_etaslice_E[h][i][j]->Fit("expo","L Q S","",2.5,6);
+	      h1_slopes_etaslice[h][i]->Fill(h1_etaslice_E[h][i][j]->GetFunction("expo")->GetParameter(1));
+	      for(int k=0; k<(h==0?256:64); ++k)
+		{
+		  h1_tower_E[h][i][j][k]->Fit("expo","L Q S","",2.5,6);
+		  float slope = h1_tower_E[h][i][j][k]->GetFunction("expo")->GetParameter(1);
+		  h1_etaslice_slopes[h][i][j]->Fill(slope);
+		  h1_calo_slopes[h][i]->Fill(slope);
+		}
+	    }
+	}
+    }
   outt->Fill();
   outfile->WriteObject(outt,outt->GetName());
   outfile->WriteObject(h1_zdist,h1_zdist->GetName());
   outfile->WriteObject(h1_mbdq,h1_mbdq->GetName());
-  for(int i=0; i<4; ++i)
+  for(int h=0; h<3; ++h)
     {
-      outfile->WriteObject(h1_calo_E[i],h1_calo_E[i]->GetName());
-      outfile->WriteObject(h1_calo_timedist[i],h1_calo_timedist[i]->GetName());
-      for(int j=0; j<24; ++j)
+      for(int i=0; i<4; ++i)
 	{
-	  outfile->WriteObject(h1_etaslice_E[i][j],h1_etaslice_E[i][j]->GetName());
-	  outfile->WriteObject(h1_etaslice_timedist[i][j],h1_etaslice_timedist[i][j]->GetName());
-	  for(int k=0; k<64; ++k)
+	  outfile->WriteObject(h1_calo_E[h][i],h1_calo_E[h][i]->GetName());
+	  outfile->WriteObject(h1_calo_slopes[h][i],h1_calo_slopes[h][i]->GetName());
+	  outfile->WriteObject(h1_calo_timedist[h][i],h1_calo_timedist[h][i]->GetName());
+	  outfile->WriteObject(h1_slopes_etaslice[h][i],h1_slopes_etaslice[h][i]->GetName());
+	  for(int j=0; j<(h==0?96:24); ++j)
 	    {
-	      outfile->WriteObject(h1_tower_E[i][j][k],h1_tower_E[i][j][k]->GetName());
-	      outfile->WriteObject(h1_tower_timedist[i][j][k],h1_tower_timedist[i][j][k]->GetName());
+	      outfile->WriteObject(h1_etaslice_E[h][i][j],h1_etaslice_E[h][i][j]->GetName());
+	      outfile->WriteObject(h1_etaslice_timedist[h][i][j],h1_etaslice_timedist[h][i][j]->GetName());
+	      outfile->WriteObject(h1_etaslice_E[h][i][j],h1_etaslice_E[h][i][j]->GetName());
+	      outfile->WriteObject(h1_etaslice_slopes[h][i][j],h1_etaslice_slopes[h][i][j]->GetName());
+	      for(int k=0; k<(h==0?256:64); ++k)
+		{
+		  outfile->WriteObject(h1_tower_E[h][i][j][k],h1_tower_E[h][i][j][k]->GetName());
+		  outfile->WriteObject(h1_tower_timedist[h][i][j][k],h1_tower_timedist[h][i][j][k]->GetName());
+		}
 	    }
 	}
     }

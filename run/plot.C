@@ -142,13 +142,16 @@ int plot(int rn = -1, int etabin = -1, int phibin = -1, string filebase = "summe
       rates[3][i] = rates19[i];
     }
 
-  TH1D* h1_ntg[4];
-  for(int i=0; i<4; ++i)
+  TH1D* h1_ntg[3][4];
+  for(int h=0; h<3; ++h)
     {
-      h1_ntg[i] = new TH1D(("h1_ntg"+to_string(i)).c_str(),"",rntime,brtime,ertime);
+      for(int i=0; i<4; ++i)
+	{
+	  h1_ntg[h][i] = new TH1D(("h1_ntg"+to_string(h)+"_"+to_string(i)).c_str(),"",rntime,brtime,ertime);
+	}
     }
-  TH1D* h1_E[4];
-  TH1D* h1_time[4];
+  TH1D* h1_E[3][4];
+  TH1D* h1_time[3][4];
   TFile* thefile;
   TTree* thetree;
   if(rn == -1)
@@ -159,7 +162,7 @@ int plot(int rn = -1, int etabin = -1, int phibin = -1, string filebase = "summe
       //float rates[4] = {0};
       double rts[2];
       int runnumber;
-      int ntg[4];
+      int ntg[3][4];
       int whichrun = 0;
       int runnumbers[10] = {48232,48233,48236,48237,48238,48239,48240,48244,48245,48246};
       int runcounter = 0;
@@ -193,29 +196,35 @@ int plot(int rn = -1, int etabin = -1, int phibin = -1, string filebase = "summe
 	      double rate = rates[j][runcounter];//get_rate(runnumber,trigs[j]);
 	      //cout << nevt[j] << endl;
 	      cout << get_dicor(rate,rt) << endl;
-	      if(nevt[j] != 0) h1_ntg[j]->Fill(rts[0],ntg[j]);
+	      for(int h=0; h<3; ++h)
+		{
+		  if(nevt[j] != 0) h1_ntg[h][j]->Fill(rts[0],ntg[h][j]);
+		}
 	      runevt[runcounter][j] += nevt[j];//*get_dicor(rate, rt)/(rt*rate);
 	      //cout << h1_ntg[j]->Integral() << endl;
 	    }
 	}
-      for(int i=0; i<10; ++i)
+      for(int h=0; h<3; ++h)
 	{
-	  for(int j=0; j<4; ++j)
+	  for(int i=0; i<10; ++i)
 	    {
-	      //cout << runevt[i][j] << endl;
-	      if(runevt[i][j] != 0)
+	      for(int j=0; j<4; ++j)
 		{
-		  //cout << i << " " << j << endl;
 		  //cout << runevt[i][j] << endl;
-		  //cout << h1_ntg[j]->GetBinContent(h1_ntg[j]->FindBin(runt[i])) << endl;
-		  //cout << h1_ntg[j]->GetBinContent(h1_ntg[j]->FindBin(runt[i]))/runevt[i][j] << endl;
-		  h1_ntg[j]->SetBinContent(h1_ntg[j]->FindBin(runt[i]),h1_ntg[j]->GetBinContent(h1_ntg[j]->FindBin(runt[i]))/runevt[i][j]);
-		  h1_ntg[j]->SetBinError(h1_ntg[j]->FindBin(runt[i]),sqrt(h1_ntg[j]->GetBinContent(h1_ntg[j]->FindBin(runt[i])))/runevt[i][j]);
-		}
-	      else
-		{
-		  h1_ntg[j]->SetBinContent(h1_ntg[j]->FindBin(runt[i]),0);
-		  h1_ntg[j]->SetBinError(h1_ntg[j]->FindBin(runt[i]),0);
+		  if(runevt[i][j] != 0)
+		    {
+		      //cout << i << " " << j << endl;
+		      //cout << runevt[i][j] << endl;
+		      //cout << h1_ntg[j]->GetBinContent(h1_ntg[j]->FindBin(runt[i])) << endl;
+		      //cout << h1_ntg[j]->GetBinContent(h1_ntg[j]->FindBin(runt[i]))/runevt[i][j] << endl;
+		      h1_ntg[h][j]->SetBinContent(h1_ntg[h][j]->FindBin(runt[i]),h1_ntg[h][j]->GetBinContent(h1_ntg[h][j]->FindBin(runt[i]))/runevt[i][j]);
+		      h1_ntg[h][j]->SetBinError(h1_ntg[h][j]->FindBin(runt[i]),sqrt(h1_ntg[h][j]->GetBinContent(h1_ntg[h][j]->FindBin(runt[i])))/runevt[i][j]);
+		    }
+		  else
+		    {
+		      h1_ntg[h][j]->SetBinContent(h1_ntg[h][j]->FindBin(runt[i]),0);
+		      h1_ntg[h][j]->SetBinError(h1_ntg[h][j]->FindBin(runt[i]),0);
+		    }
 		}
 	    }
 	}
@@ -239,26 +248,29 @@ int plot(int rn = -1, int etabin = -1, int phibin = -1, string filebase = "summe
 	  totalevt[j] += nevt[j];
 	}
     }
-  for(int i=0; i<4; ++i)
+  for(int h=0; h<3; ++h)
     {
-      if(etabin < 0)
+      for(int i=0; i<4; ++i)
 	{
-	  h1_E[i] = (TH1D*)thefile->Get(("h1_calo_E"+to_string(i)).c_str());
-	  h1_time[i] = (TH1D*)thefile->Get(("h1_calo_timedist"+to_string(i)).c_str());
+	  if(etabin < 0)
+	    {
+	      h1_E[h][i] = (TH1D*)thefile->Get(("h1_calo_E"+to_string(h)+"_"+to_string(i)).c_str());
+	      h1_time[h][i] = (TH1D*)thefile->Get(("h1_calo_timedist"+to_string(h)+"_"+to_string(i)).c_str());
+	    }
+	  else if(phibin < 0)
+	    {
+	      h1_E[h][i] = (TH1D*)thefile->Get(("h1_etaslice_E"+to_string(h)+"_"+to_string(i)+"_"+to_string(etabin)).c_str());
+	      h1_time[h][i] = (TH1D*)thefile->Get(("h1_etaslice_timedist"+to_string(h)+"_"+to_string(i)+"_"+to_string(etabin)).c_str());
+	    }
+	  else
+	    {
+	      h1_E[h][i] = (TH1D*)thefile->Get(("h1_tower_E"+to_string(h)+"_"+to_string(i)+"_"+to_string(etabin)+"_"+to_string(phibin)).c_str());
+	      h1_time[h][i] = (TH1D*)thefile->Get(("h1_tower_timedist"+to_string(h)+"_"+to_string(i)+"_"+to_string(etabin)+"_"+to_string(phibin)).c_str());
+	    }
+	  h1_E[h][i]->Scale(1./totalevt[i]);
+	  h1_time[h][i]->Scale(1./totalevt[i]);
+	  //h1_ntg[i]->Scale(1./totalevt[i]);
 	}
-      else if(phibin < 0)
-	{
-	  h1_E[i] = (TH1D*)thefile->Get(("h1_etaslice_E"+to_string(i)+"_"+to_string(etabin)).c_str());
-	  h1_time[i] = (TH1D*)thefile->Get(("h1_etaslice_timedist"+to_string(i)+"_"+to_string(etabin)).c_str());
-	}
-      else
-	{
-	  h1_E[i] = (TH1D*)thefile->Get(("h1_tower_E"+to_string(i)+"_"+to_string(etabin)+"_"+to_string(phibin)).c_str());
-	  h1_time[i] = (TH1D*)thefile->Get(("h1_tower_timedist"+to_string(i)+"_"+to_string(etabin)+"_"+to_string(phibin)).c_str());
-	}
-      h1_E[i]->Scale(1./totalevt[i]);
-      h1_time[i]->Scale(1./totalevt[i]);
-      //h1_ntg[i]->Scale(1./totalevt[i]);
     }
   //cout << h1_E[0]->GetBinContent(50) << " " << h1_E[0]->GetBinContent(51) <<" " << h1_E[0]->GetBinContent(52) << " " << h1_E[0]->GetBinContent(53) << endl;
   int colors[4] = {kBlack, kGreen+2, kMagenta+2, kBlue+2};
@@ -269,72 +281,74 @@ int plot(int rn = -1, int etabin = -1, int phibin = -1, string filebase = "summe
   TLegend* leg = new TLegend(0.45,0.6,0.9,0.87);
   leg->SetFillStyle(0);
   leg->SetBorderSize(0);
-  for(int i=0; i<4; ++i)
+  for(int h=0; h<3; ++h)
     {
-      h1_E[i]->GetXaxis()->SetTitle("Tower E [GeV]");
-      h1_E[i]->GetYaxis()->SetTitle("Counts Per Event");
-      h1_E[i]->GetYaxis()->SetTitleOffset(1.5);
-      h1_E[i]->SetMarkerStyle(marker[i]);
-      h1_E[i]->SetMarkerColor(colors[i]);
-      if(h1_E[i]->GetMaximum() > max[0]) max[0] = h1_E[i]->GetMaximum();
-      if(h1_E[i]->GetBinContent(h1_E[i]->FindLastBinAbove()) < min[0]) min[0] = h1_E[i]->GetBinContent(h1_E[i]->FindLastBinAbove());
-      leg->AddEntry(h1_E[i],texts[i].c_str(),"p");
-      h1_time[i]->GetXaxis()->SetTitle("Tower Time [sample]");
-      h1_time[i]->GetYaxis()->SetTitle("Counts Per Event");
-      h1_time[i]->SetMarkerStyle(marker[i]);
-      h1_time[i]->SetMarkerColor(colors[i]);
-      h1_time[i]->GetYaxis()->SetTitleOffset(1.5);
-      if(h1_time[i]->GetMaximum() > max[1]) max[1] = h1_time[i]->GetMaximum();
-      if(h1_time[i]->GetBinContent(h1_time[i]->FindLastBinAbove()) < min[1]) min[1] = h1_time[i]->GetBinContent(h1_time[i]->FindLastBinAbove());
-      h1_ntg[i]->GetXaxis()->SetTitle("Time [2024 date]");
-      h1_ntg[i]->GetYaxis()->SetTitle("Towers > 0.5 GeV Per Event");
-      h1_ntg[i]->SetMarkerStyle(marker[i]);
-      h1_ntg[i]->SetMarkerColor(colors[i]);
-      h1_ntg[i]->GetXaxis()->SetTimeDisplay(1);
-      h1_ntg[i]->GetXaxis()->SetTimeFormat("%d\/%m");
-      h1_ntg[i]->GetYaxis()->SetTitleOffset(1.5);
-      if(h1_ntg[i]->GetMaximum() > max[2]) max[2] = h1_ntg[i]->GetMaximum();
-      if(h1_ntg[i]->GetBinContent(h1_ntg[i]->FindLastBinAbove()) < min[2]) min[2] = h1_ntg[i]->GetBinContent(h1_ntg[i]->FindLastBinAbove());
+      for(int i=0; i<4; ++i)
+	{
+	  h1_E[h][i]->GetXaxis()->SetTitle("Tower E [GeV]");
+	  h1_E[h][i]->GetYaxis()->SetTitle("Counts Per Event");
+	  h1_E[h][i]->GetYaxis()->SetTitleOffset(1.5);
+	  h1_E[h][i]->SetMarkerStyle(marker[i]);
+	  h1_E[h][i]->SetMarkerColor(colors[i]);
+	  if(h1_E[h][i]->GetMaximum() > max[0]) max[0] = h1_E[h][i]->GetMaximum();
+	  if(h1_E[h][i]->GetBinContent(h1_E[h][i]->FindLastBinAbove()) < min[0]) min[0] = h1_E[h][i]->GetBinContent(h1_E[h][i]->FindLastBinAbove());
+	  if(h==0) leg->AddEntry(h1_E[h][i],texts[i].c_str(),"p");
+	  h1_time[h][i]->GetXaxis()->SetTitle("Tower Time [sample]");
+	  h1_time[h][i]->GetYaxis()->SetTitle("Counts Per Event");
+	  h1_time[h][i]->SetMarkerStyle(marker[i]);
+	  h1_time[h][i]->SetMarkerColor(colors[i]);
+	  h1_time[h][i]->GetYaxis()->SetTitleOffset(1.5);
+	  if(h1_time[h][i]->GetMaximum() > max[1]) max[1] = h1_time[h][i]->GetMaximum();
+	  if(h1_time[h][i]->GetBinContent(h1_time[h][i]->FindLastBinAbove()) < min[1]) min[1] = h1_time[h][i]->GetBinContent(h1_time[h][i]->FindLastBinAbove());
+	  h1_ntg[h][i]->GetXaxis()->SetTitle("Time [2024 date]");
+	  h1_ntg[h][i]->GetYaxis()->SetTitle("Towers > 0.5 GeV Per Event");
+	  h1_ntg[h][i]->SetMarkerStyle(marker[i]);
+	  h1_ntg[h][i]->SetMarkerColor(colors[i]);
+	  h1_ntg[h][i]->GetXaxis()->SetTimeDisplay(1);
+	  h1_ntg[h][i]->GetXaxis()->SetTimeFormat("%d\/%m");
+	  h1_ntg[h][i]->GetYaxis()->SetTitleOffset(1.5);
+	  if(h1_ntg[h][i]->GetMaximum() > max[2]) max[2] = h1_ntg[h][i]->GetMaximum();
+	  if(h1_ntg[h][i]->GetBinContent(h1_ntg[h][i]->FindLastBinAbove()) < min[2]) min[2] = h1_ntg[h][i]->GetBinContent(h1_ntg[h][i]->FindLastBinAbove());
+	}
+      
+      for(int i=0; i<4; ++i)
+	{
+	  h1_E[h][i]->GetYaxis()->SetRangeUser(0.5*min[0],2*max[0]);
+	  h1_E[h][i]->GetXaxis()->SetRangeUser(-1,15);
+	  h1_time[h][i]->GetXaxis()->SetRangeUser(-8,8);
+	  h1_time[h][i]->GetYaxis()->SetRangeUser(0.5*min[1],2*max[1]);
+	  h1_ntg[h][i]->GetYaxis()->SetRangeUser(0.9*min[2],1.1*max[2]);
+	}
+      
+      TCanvas* c = new TCanvas("","",1000,1000);
+      gPad->SetLeftMargin(0.15);
+      h1_ntg[h][0]->GetYaxis()->SetRangeUser(0,1);//0.9*h1_ntg[0]->GetBinContent(h1_ntg[0]->FindLastBinAbove(0)),1.1*h1_ntg[0]->GetMaximum());
+      h1_ntg[h][0]->Draw("PE");
+      c->SaveAs(("output/rmg/ntg"+to_string(h)+"_"+to_string(rn)+"_"+to_string(etabin)+"_"+to_string(phibin)+"_0.pdf").c_str());
+      h1_ntg[h][0]->GetYaxis()->SetRangeUser(0.9*min[2],1.1*max[2]);
+      for(int i=1; i<4; ++i)
+	{
+	  h1_ntg[h][i]->Draw("SAME PE");
+	}
+      leg->Draw();
+      c->SaveAs(("output/rmg/ntg"+to_string(h)+"_"+to_string(rn)+"_"+to_string(etabin)+"_"+to_string(phibin)+".pdf").c_str());
+      gPad->SetLogy();
+      h1_E[h][0]->Draw("PE");
+      for(int i=1; i<4; ++i)
+	{
+	  h1_E[h][i]->Draw("SAME PE");
+	}
+      leg->Draw();
+      c->SaveAs(("output/rmg/E"+to_string(h)+"_"+to_string(rn)+"_"+to_string(etabin)+"_"+to_string(phibin)+".pdf").c_str());
+      
+      h1_time[h][0]->Draw("PE");
+      for(int i=1; i<4; ++i)
+	{
+	  h1_time[h][i]->Draw("SAME PE");
+	}
+      leg->Draw();
+      c->SaveAs(("output/rmg/time"+to_string(h)+"_"+to_string(rn)+"_"+to_string(etabin)+"_"+to_string(phibin)+".pdf").c_str());
     }
-
-  for(int i=0; i<4; ++i)
-    {
-      h1_E[i]->GetYaxis()->SetRangeUser(0.5*min[0],2*max[0]);
-      h1_E[i]->GetXaxis()->SetRangeUser(-1,15);
-      h1_time[i]->GetXaxis()->SetRangeUser(-8,8);
-      h1_time[i]->GetYaxis()->SetRangeUser(0.5*min[1],2*max[1]);
-      h1_ntg[i]->GetYaxis()->SetRangeUser(0.9*min[2],1.1*max[2]);
-    }
-
-  TCanvas* c = new TCanvas("","",1000,1000);
-  gPad->SetLeftMargin(0.15);
-  h1_ntg[0]->GetYaxis()->SetRangeUser(0,1);//0.9*h1_ntg[0]->GetBinContent(h1_ntg[0]->FindLastBinAbove(0)),1.1*h1_ntg[0]->GetMaximum());
-  h1_ntg[0]->Draw("PE");
-  c->SaveAs(("output/rmg/ntg"+to_string(rn)+"_"+to_string(etabin)+"_"+to_string(phibin)+"_0.pdf").c_str());
-  h1_ntg[0]->GetYaxis()->SetRangeUser(0.9*min[2],1.1*max[2]);
-  for(int i=1; i<4; ++i)
-    {
-      h1_ntg[i]->Draw("SAME PE");
-    }
-  leg->Draw();
-  c->SaveAs(("output/rmg/ntg"+to_string(rn)+"_"+to_string(etabin)+"_"+to_string(phibin)+".pdf").c_str());
-  gPad->SetLogy();
-  h1_E[0]->Draw("PE");
-  for(int i=1; i<4; ++i)
-    {
-      h1_E[i]->Draw("SAME PE");
-    }
-  leg->Draw();
-  c->SaveAs(("output/rmg/E"+to_string(rn)+"_"+to_string(etabin)+"_"+to_string(phibin)+".pdf").c_str());
-
-  h1_time[0]->Draw("PE");
-  for(int i=1; i<4; ++i)
-    {
-      h1_time[i]->Draw("SAME PE");
-    }
-  leg->Draw();
-  c->SaveAs(("output/rmg/time"+to_string(rn)+"_"+to_string(etabin)+"_"+to_string(phibin)+".pdf").c_str());
-  
 
   return 0;
 }
