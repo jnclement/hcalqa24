@@ -152,6 +152,8 @@ int plot(int rn = -1, int etabin = -1, int phibin = -1, string filebase = "summe
     }
   TH1D* h1_E[3][4];
   TH1D* h1_time[3][4];
+  TH1D* h1_slope[3][4];
+  TH1D* h1_etaslice_slopes[3][4];
   TFile* thefile;
   TTree* thetree;
   if(rn == -1)
@@ -254,19 +256,29 @@ int plot(int rn = -1, int etabin = -1, int phibin = -1, string filebase = "summe
 	{
 	  if(etabin < 0)
 	    {
+	      h1_slope[h][i] = (TH1D*)thefile->Get(("h1_calo_slopes"+to_string(h)+"_"+to_string(i)).c_str());
 	      h1_E[h][i] = (TH1D*)thefile->Get(("h1_calo_E"+to_string(h)+"_"+to_string(i)).c_str());
 	      h1_time[h][i] = (TH1D*)thefile->Get(("h1_calo_timedist"+to_string(h)+"_"+to_string(i)).c_str());
 	    }
 	  else if(phibin < 0)
 	    {
+	      h1_slope[h][i] = (TH1D*)thefile->Get(("h1_slopes_etaslice"+to_string(h)+"_"+to_string(i)).c_str());
+	      h1_etaslice_slopes[h][i] = (TH1D*)thefile->Get(("h1_etaslice_slopes"+to_string(h)+"_"+to_string(i)+"_"+to_string(etabin)).c_str());
 	      h1_E[h][i] = (TH1D*)thefile->Get(("h1_etaslice_E"+to_string(h)+"_"+to_string(i)+"_"+to_string(etabin)).c_str());
 	      h1_time[h][i] = (TH1D*)thefile->Get(("h1_etaslice_timedist"+to_string(h)+"_"+to_string(i)+"_"+to_string(etabin)).c_str());
 	    }
 	  else
 	    {
+	      h1_slope[h][i] = (TH1D*)thefile->Get(("h1_slopes_etaslice"+to_string(h)+"_"+to_string(i)).c_str());
+	      h1_etaslice_slopes[h][i] = (TH1D*)thefile->Get(("h1_etaslice_slopes"+to_string(h)+"_"+to_string(i)+"_"+to_string(etabin)).c_str());
 	      h1_E[h][i] = (TH1D*)thefile->Get(("h1_tower_E"+to_string(h)+"_"+to_string(i)+"_"+to_string(etabin)+"_"+to_string(phibin)).c_str());
 	      h1_time[h][i] = (TH1D*)thefile->Get(("h1_tower_timedist"+to_string(h)+"_"+to_string(i)+"_"+to_string(etabin)+"_"+to_string(phibin)).c_str());
 	    }
+	  //cout << "test1" << endl;
+	  h1_slope[h][i]->Scale(1./(254));//totalevt[i]);
+	  //cout << "test2" << endl;
+	  if(etabin>-1) h1_etaslice_slopes[h][i]->Scale(1./(254));///totalevt[i]);
+	  //cout << "test3" << endl;
 	  h1_E[h][i]->Scale(1./totalevt[i]);
 	  h1_time[h][i]->Scale(1./totalevt[i]);
 	  //h1_ntg[i]->Scale(1./totalevt[i]);
@@ -281,10 +293,24 @@ int plot(int rn = -1, int etabin = -1, int phibin = -1, string filebase = "summe
   TLegend* leg = new TLegend(0.45,0.6,0.9,0.87);
   leg->SetFillStyle(0);
   leg->SetBorderSize(0);
-  for(int h=0; h<3; ++h)
+  for(int h=0; h<((etabin==-1 || etabin<24)?3:1); ++h)
     {
       for(int i=0; i<4; ++i)
 	{
+	  
+	  h1_slope[h][i]->GetXaxis()->SetTitle("Tower Slope [GeV^{-1}]");
+	  h1_slope[h][i]->GetYaxis()->SetTitle("Counts");
+	  h1_slope[h][i]->GetYaxis()->SetTitleOffset(1.5);
+	  h1_slope[h][i]->SetMarkerStyle(marker[i]);
+	  h1_slope[h][i]->SetMarkerColor(colors[i]);
+	  if(etabin>=0)
+	    {
+	  h1_etaslice_slopes[h][i]->GetXaxis()->SetTitle("Tower Slope [GeV^{-1}]");
+	  h1_etaslice_slopes[h][i]->GetYaxis()->SetTitle("Counts");
+	  h1_etaslice_slopes[h][i]->GetYaxis()->SetTitleOffset(1.5);
+	  h1_etaslice_slopes[h][i]->SetMarkerStyle(marker[i]);
+	  h1_etaslice_slopes[h][i]->SetMarkerColor(colors[i]);
+	    }
 	  h1_E[h][i]->GetXaxis()->SetTitle("Tower E [GeV]");
 	  h1_E[h][i]->GetYaxis()->SetTitle("Counts Per Event");
 	  h1_E[h][i]->GetYaxis()->SetTitleOffset(1.5);
@@ -319,7 +345,7 @@ int plot(int rn = -1, int etabin = -1, int phibin = -1, string filebase = "summe
 	  h1_time[h][i]->GetYaxis()->SetRangeUser(0.5*min[1],2*max[1]);
 	  h1_ntg[h][i]->GetYaxis()->SetRangeUser(0.9*min[2],1.1*max[2]);
 	}
-      
+
       TCanvas* c = new TCanvas("","",1000,1000);
       gPad->SetLeftMargin(0.15);
       h1_ntg[h][0]->GetYaxis()->SetRangeUser(0,1);//0.9*h1_ntg[0]->GetBinContent(h1_ntg[0]->FindLastBinAbove(0)),1.1*h1_ntg[0]->GetMaximum());
@@ -333,6 +359,26 @@ int plot(int rn = -1, int etabin = -1, int phibin = -1, string filebase = "summe
       leg->Draw();
       c->SaveAs(("output/rmg/ntg"+to_string(h)+"_"+to_string(rn)+"_"+to_string(etabin)+"_"+to_string(phibin)+".pdf").c_str());
       gPad->SetLogy();
+
+      h1_slope[h][0]->Draw("PE");
+      for(int i=1; i<4; ++i)
+	{
+	  h1_slope[h][i]->Draw("SAME PE");
+	}
+      leg->Draw();
+      c->SaveAs(("output/rmg/slope"+to_string(h)+"_"+to_string(rn)+"_"+to_string(etabin)+"_"+to_string(phibin)+".pdf").c_str());
+      
+      if(etabin>=0)
+	{
+      h1_etaslice_slopes[h][0]->Draw("PE");
+      for(int i=1; i<4; ++i)
+	{
+	  h1_etaslice_slopes[h][i]->Draw("SAME PE");
+	}
+      leg->Draw();
+      c->SaveAs(("output/rmg/etaslice_slopes"+to_string(h)+"_"+to_string(rn)+"_"+to_string(etabin)+"_"+to_string(phibin)+".pdf").c_str());
+	}
+
       h1_E[h][0]->Draw("PE");
       for(int i=1; i<4; ++i)
 	{

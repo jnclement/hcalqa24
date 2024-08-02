@@ -288,11 +288,11 @@ int quickroot(string filebase="", int njob=0)
 	{
 	  for(int j=0; j<(h==0?96:24); ++j)
 	    {
-	      h1_etaslice_E[h][i][j]->Fit("expo","L Q S","",2.5,6);
+	      h1_etaslice_E[h][i][j]->Fit("expo","L Q S","",0.25,2);
 	      h1_slopes_etaslice[h][i]->Fill(h1_etaslice_E[h][i][j]->GetFunction("expo")->GetParameter(1));
 	      for(int k=0; k<(h==0?256:64); ++k)
 		{
-		  h1_tower_E[h][i][j][k]->Fit("expo","L Q S","",2.5,6);
+		  h1_tower_E[h][i][j][k]->Fit("expo","L Q S","",0.25,2);
 		  float slope = h1_tower_E[h][i][j][k]->GetFunction("expo")->GetParameter(1);
 		  h1_etaslice_slopes[h][i][j]->Fill(slope);
 		  h1_calo_slopes[h][i]->Fill(slope);
