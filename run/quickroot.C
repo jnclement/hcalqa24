@@ -30,6 +30,24 @@
 #include <TFile.h>
 #include <algorithm>
 #include "dlUtility.h"
+int plot_evtdis(int nsec, int etabin[], int phibin[], float calen[], int drawcount, int rn, int njob)
+{
+  TCanvas* thecanvas = new TCanvas("","",400,1000);
+  TH2D* evtdis = new TH2D("evtdis","",24,-0.5,23.5,64,-0.5,63.5);
+  for(int i=0; i<nsec; ++i)
+    {
+      evtdis->Fill(etabin[i],phibin[i],calen[i]);
+    }
+
+  evtdis->GetXaxis()->SetTitle("#eta Bin");
+  evtdis->GetYaxis()->SetTitle("#phi Bin");
+  evtdis->GetZaxis()->SetTitle("Energy [GeV]");
+  thecanvas->cd();
+  gPad->SetRightMargin(0.2);
+  evtdis->Draw("COLZ");
+  thecanvas->SaveAs(("output/rmg/withbeamback"+to_string(rn)+"_"+to_string(njob)+"_"+to_string(drawcount)+".png").c_str());
+  return 0;
+}
 
 float get_eta(float eta)
 {
@@ -171,6 +189,8 @@ int quickroot(string filebase="", int njob=0)
   TH1D* h1_calo_slopes[3][4];
   TH1D* h1_etaslice_slopes[3][4][96];
   TH1D* h1_slopes_etaslice[3][4];
+  TH1D* h1_cmet[3][4];
+  TH1D* h1_cnmt[3][4];
   unsigned long int brtime = 9*(1721285685/10);
   unsigned long int ertime = (11*((unsigned long int)1721308753))/10;
   unsigned long int range = ertime - brtime;
@@ -179,6 +199,8 @@ int quickroot(string filebase="", int njob=0)
     {
       for(int i=0; i<4; ++i)
 	{
+	  h1_cmet[h][i] = new TH1D(("h1_cmet"+to_string(h)+"_"+to_string(i)).c_str(),"",1050,-5,100);
+	  h1_cnmt[h][i] = new TH1D(("h1_cnmt"+to_string(h)+"_"+to_string(i)).c_str(),"",1050,-5,100);
 	  h1_calo_slopes[h][i] = new TH1D(("h1_calo_slopes"+to_string(h)+"_"+to_string(i)).c_str(),"",1000,-10,0);
 	  h1_slopes_etaslice[h][i] = new TH1D(("h1_slopes_etaslice"+to_string(h)+"_"+to_string(i)).c_str(),"",1000,-10,0);
 	  h1_calo_E[h][i] = new TH1D(("h1_calo_E"+to_string(h)+"_"+to_string(i)).c_str(),"",1050,-5,100);
@@ -239,6 +261,7 @@ int quickroot(string filebase="", int njob=0)
   TCanvas* d = new TCanvas("","",1000,1000);
   TH1D* h1_zdist = new TH1D("h1_zdist","",200,-100,100);
   TH1D* h1_mbdq = new TH1D("h1_mbdq","",1000,0,10);
+  int drawcount = 0;
   for(int h=nosim; h<2; ++h)
     {
       for(int i=0; i<tree[h]->GetEntries(); ++i)
@@ -252,6 +275,7 @@ int quickroot(string filebase="", int njob=0)
 	  dtrigs[1] = (trigvec >> 17) & 1;
 	  dtrigs[2] = (trigvec >> 18) & 1;
 	  dtrigs[3] = (trigvec >> 19) & 1;
+	  int samevt = 0;
 	  for(int j=0; j<4; ++j)
 	    {
 	      if(dtrigs[j])
@@ -259,6 +283,7 @@ int quickroot(string filebase="", int njob=0)
 		  if(j>0) ++trigs[j];
 		  for(int q=0; q<3; ++q)
 		    {
+
 		      for(int k = 0; k<nsec[q]; ++k)
 			{
 			  if(calen[q][k] > 0.5) ntg[q][j]++;
@@ -267,9 +292,41 @@ int quickroot(string filebase="", int njob=0)
 			  h1_tower_E[q][j][etabin[q][k]][phibin[q][k]]->Fill(calen[q][k]);
 			  if(calen[q][k] > 0.5)
 			    {
-			      h1_calo_timedist[q][j]->Fill(calt[q][k]);
+
 			      h1_etaslice_timedist[q][j][etabin[q][k]]->Fill(calt[q][k]);
 			      h1_tower_timedist[q][j][etabin[q][k]][phibin[q][k]]->Fill(calt[q][k]);		 
+			    }
+			  int cmet = 0;
+			  int isoc = 0;
+			  if(q!=0)
+			    {
+			      for(int l=0; l<nsec[q]; ++l)
+				{
+				  //if(calen[q][k] < 0.5) continue;
+				  if(abs(phibin[q][k]-phibin[q][l])==1 && abs(etabin[q][k]-etabin[q][l])<2 && calen[q][l] < 0.25)
+				    {
+				      ++isoc;
+				    }
+				  else if(phibin[q][k]-phibin[q][l]==0 && abs(etabin[q][k]-etabin[q][l])<3 && etabin[q][k]-etabin[q][l]!=0 && calen[q][l] > 0.5)
+				    {
+				      ++cmet;
+				    }
+				}
+			      if(isoc==6 && cmet == 4)
+				{
+				  if(drawcount < 20 &&samevt == 0 && q==2)
+				    {
+				      plot_evtdis(1536,etabin[q],phibin[q],calen[q],drawcount,rn,njob);
+				      samevt = 1;
+				      drawcount++;
+				    }
+				  h1_calo_timedist[q][j]->Fill(calt[q][k]);
+				  h1_cmet[q][j]->Fill(calen[q][k]);
+				}
+			      else
+				{
+				  h1_cnmt[q][j]->Fill(calen[q][k]);
+				}
 			    }
 			}
 		    }
@@ -281,7 +338,7 @@ int quickroot(string filebase="", int njob=0)
 	    }	  
 	}
     }
-
+  /*
   for(int h=0; h<3; ++h)
     {
       for(int i=0; i<4; ++i)
@@ -300,6 +357,7 @@ int quickroot(string filebase="", int njob=0)
 	    }
 	}
     }
+  */
   outt->Fill();
   outfile->WriteObject(outt,outt->GetName());
   outfile->WriteObject(h1_zdist,h1_zdist->GetName());
@@ -308,6 +366,8 @@ int quickroot(string filebase="", int njob=0)
     {
       for(int i=0; i<4; ++i)
 	{
+	  outfile->WriteObject(h1_cmet[h][i],h1_cmet[h][i]->GetName());
+	  outfile->WriteObject(h1_cnmt[h][i],h1_cnmt[h][i]->GetName());
 	  outfile->WriteObject(h1_calo_E[h][i],h1_calo_E[h][i]->GetName());
 	  outfile->WriteObject(h1_calo_slopes[h][i],h1_calo_slopes[h][i]->GetName());
 	  outfile->WriteObject(h1_calo_timedist[h][i],h1_calo_timedist[h][i]->GetName());

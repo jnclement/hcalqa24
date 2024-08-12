@@ -6,7 +6,14 @@
 //etc.
 //#include "tdrstyle.C"   // std::clock()
 
-
+int formathist(TH1D* hist, string xtitle, string ytitle, int markerstyle, int color)
+{
+  hist->GetXaxis()->SetTitle(xtitle.c_str());
+  hist->GetYaxis()->SetTitle(ytitle.c_str());
+  hist->SetMarkerStyle(markerstyle);
+  hist->SetMarkerColor(color);
+  return 0;
+}
 void setcolorcent(TH1* hist, int kcodes[12], int kColor, int bins, int i)
 {
   if(i < 9)
